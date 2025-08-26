@@ -47,8 +47,8 @@ def dataset_has_validations(dataset: AbstractDataset) -> bool:
     return (
         hasattr(dataset, "metadata")
         and dataset.metadata
-        and "kedro-dataguard" in dataset.metadata
-        and dataset.metadata.get("kedro-dataguard")
+        and "kedro-datasentinel" in dataset.metadata
+        and dataset.metadata.get("kedro-datasentinel")
     )
 
 

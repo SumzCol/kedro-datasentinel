@@ -66,6 +66,9 @@ kedro_dataguard = "kedro_datasentinel.framework.cli.cli:commands"
 [project.entry-points."kedro.hooks"]
 kedro_dataguard = "kedro_datasentinel.framework.hooks.datasentinel_hooks:hooks"
 
+[tool.setuptools.package-data]
+"kedro_datasentinel.email.template" = ["template/*.yml"]
+
 [tool.pyright]
 include = ['kedro_datasentinel']
 exclude = [
@@ -82,7 +85,7 @@ reportMissingTypeStubs = false
 reportUnknownMemberType = false
 reportUnknownVariableType = false
 reportUnknownArgumentType = false
-reportPrivateUsage = true
+reportPrivateUsage = false
 reportUntypedFunctionDecorator = true
 reportUntypedClassDecorator = true
 reportUntypedBaseClass = true
@@ -104,7 +107,7 @@ addopts="""
 --cov-config pyproject.toml \
 --cov-report xml:coverage.xml \
 --cov-report term-missing \
---cov datasentinel \
+--cov kedro_datasentinel \
 --cov tests \
 --no-cov-on-fail \
 -ra \
@@ -117,7 +120,7 @@ testpaths = [
 ]
 
 [tool.coverage.report]
-fail_under = 0
+fail_under = 90
 show_missing = true
 omit = [
     "tests/*",

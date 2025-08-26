@@ -33,7 +33,7 @@ def datasentinel():
     pass
 
 
-@click.command(name="init")
+@click.command(name="init")  # type: ignore
 @click.option(
     "--env",
     "-e",
@@ -78,7 +78,7 @@ def init(env: str, force: bool):
             )
 
 
-@click.command(name="validate")
+@click.command(name="validate")  # type: ignore
 @click.option(
     "--dataset",
     "-d",
@@ -111,7 +111,7 @@ def validate(dataset: str, env: str):
 
         try:
             validation_conf_model = ValidationWorkflowConfig(
-                **dataset_instance.metadata["kedro-dataguard"]
+                **dataset_instance.metadata["kedro-datasentinel"]
             )
         except ValidationError as e:
             raise DataValidationConfigError(

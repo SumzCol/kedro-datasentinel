@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Any
 
-from dataguard.store.audit.row import BaseAuditRow
+from datasentinel.store.audit.row import BaseAuditRow
 
 
 class KedroAuditRow(BaseAuditRow):

@@ -46,9 +46,10 @@ def try_load_obj_from_class_paths(class_paths: list[str]) -> Any | None:
 def dataset_has_validations(dataset: AbstractDataset) -> bool:
     return (
         hasattr(dataset, "metadata")
-        and dataset.metadata
+        and bool(dataset.metadata)
         and "kedro-datasentinel" in dataset.metadata
-        and dataset.metadata.get("kedro-datasentinel")
+        and isinstance(dataset.metadata.get("kedro-datasentinel"), dict)
+        and bool(dataset.metadata.get("kedro-datasentinel"))
     )
 
 

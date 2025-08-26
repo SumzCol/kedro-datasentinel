@@ -15,7 +15,7 @@ lint.select = [
 ]
 
 [lint.per-file-ignores]
-"tests/*" = ["UP007", "S101", "D", "PLR0913"]
+"tests/*" = ["UP007", "S101", "D", "PLR0913", "PLR2004"]
 
 [lint.pylint]
 max-args = 7  # Set the maximum number of arguments for a function

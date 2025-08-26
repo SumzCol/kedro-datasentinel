@@ -3,7 +3,7 @@ from copy import deepcopy
 from typing import Any
 
 from datasentinel.notification.notifier.core import AbstractNotifier
-from datasentinel.session import DataGuardSession
+from datasentinel.session import DataSentinelSession
 from datasentinel.store.audit.core import AbstractAuditStore
 from datasentinel.store.result.core import AbstractResultStore
 from kedro.framework.context import KedroContext
@@ -55,8 +55,8 @@ class DataSentinelSessionConfig(BaseModel):
             values[field] = {} if values.get(field) is None else values.get(field)
         return values
 
-    def create_session(self, context: KedroContext) -> DataGuardSession:
-        session = DataGuardSession.get_or_create(self.session_name)
+    def create_session(self, context: KedroContext) -> DataSentinelSession:
+        session = DataSentinelSession.get_or_create(self.session_name)
         credentials_loader = make_credentials_loader(context=context)
 
         for name, notifier_conf in self.notifiers.items():
@@ -122,7 +122,7 @@ def _create_notifier(
     if class_obj is None:
         raise ValueError(
             f"The notifier class path '{class_path}' is not valid, it should be a full path like"
-            "'dataguard.notification.notifier.email.EmailNotifier' or one that reflects the "
+            "'datasentinel.notification.notifier.email.EmailNotifier' or one that reflects the "
             "module of the notifier like 'email.EmailNotifier'. For custom notifiers, a "
             "full class path is required"
         )
@@ -157,7 +157,7 @@ def _create_audit_store(
     if class_obj is None:
         raise ValueError(
             f"The audit store class path '{class_path}' is not valid, it should be a full path "
-            "like 'dataguard.store.audit.text.CSVAuditStore' or one that reflects "
+            "like 'datasentinel.store.audit.text.CSVAuditStore' or one that reflects "
             "the module of the audit store like 'text.CSVAuditStore'. "
             "For custom audit stores, a full class path is required"
         )
@@ -192,7 +192,7 @@ def _create_result_store(
     if class_obj is None:
         raise ValueError(
             f"The result store class path '{class_path}' is not valid, it should be a full path "
-            "like 'dataguard.store.result.text.CSVResultStore' or one that reflects "
+            "like 'datasentinel.store.result.text.CSVResultStore' or one that reflects "
             "the module of the result store like 'text.CSVResultStore'. "
             "For custom result stores, a full class path is required"
         )

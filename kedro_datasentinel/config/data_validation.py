@@ -59,12 +59,12 @@ class CheckConfig(BaseModel):
     def _create_check_obj(self, name: str) -> AbstractCheck:
         class_path = self.type
         class_obj = try_load_obj_from_class_paths(
-            class_paths=[class_path, f"dataguard.validation.check.{class_path}"]
+            class_paths=[class_path, f"datasentinel.validation.check.{class_path}"]
         )
         if class_obj is None:
             raise ValueError(
                 f"The check class path '{class_path}' is not valid, it should be a full path like"
-                "'dataguard.validation.check.CualleeCheck'. For custom checks, a full class "
+                "'datasentinel.validation.check.CualleeCheck'. For custom checks, a full class "
                 "path is required"
             )
 

@@ -1,5 +1,5 @@
+from .data_sentinel_session import DataSentinelSessionConfig
 from .data_validation import ValidationWorkflowConfig
-from .datasentinel import DataSentinelSessionConfig
 
 
 __all__ = [

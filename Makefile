@@ -28,7 +28,7 @@ lint:
 	pre-commit run --all-files --hook-stage manual
 
 type-check:
-	pyright datasentinel
+	pyright kedro_datasentinel
 
 unit-test:
 	pytest -m unit

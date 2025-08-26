@@ -1,0 +1,151 @@
+name: Create Release Workflow
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  all-checks:
+    uses: ./.github/workflows/all-checks.yml
+
+  is-new-release-check:
+    needs: all-checks
+    runs-on: ubuntu-latest
+    outputs:
+      new_release: ${{ steps.set-outputs.outputs.new_release }}
+      is_pre_release: ${{ steps.set-outputs.outputs.is_pre_release }}
+      version: ${{ steps.set-outputs.outputs.version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.10.12
+
+      - name: Upgrade pip
+        run: |
+          python -m pip install --upgrade pip
+        shell: bash
+
+      - name: Install scripts dependencies
+        run: |
+          make install-scripts
+        shell: bash
+
+      - name: Extract release version
+        id: get-version
+        run: |
+          python scripts/gh_actions/extract_release_version.py -f kedro_datasentinel/__init__.py
+
+      - name: Check if tag exists
+        uses: mukunku/tag-exists-action@v1.6.0
+        id: tag-exists
+        with:
+          tag: ${{ env.DATA_SENTINEL_VERSION }}
+
+      - name: Check if Pypi version exists
+        id: pypi-version-exists
+        run: |
+          URL="https://pypi.org/pypi/kedro_datasentinel/${{ env.DATA_SENTINEL_VERSION }}/json"
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" $URL)
+
+          if [ "$HTTP_STATUS" == "200" ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+        shell: bash
+
+      - name: Set outputs
+        id: set-outputs
+        env:
+          VERSION: ${{ env.DATA_SENTINEL_VERSION }}
+          TAG_EXISTS: ${{ steps.tag-exists.outputs.exists }}
+          PYPI_VERSION_EXISTS: ${{ steps.pypi-version-exists.outputs.exists }}
+        run: |
+          if [ $TAG_EXISTS == 'true' || $PYPI_VERSION_EXISTS == 'true' ]; then
+            # If tag exists or pypi version exists, set both outputs to false
+            echo "new_release=false" >> $GITHUB_OUTPUT
+            echo "is_pre_release=false" >> $GITHUB_OUTPUT
+            echo "Tag or Pypi version exists ($VERSION) skipping release"
+          else
+            # Check if version contains pre-release indicators
+            echo "version=$VERSION" >> $GITHUB_OUTPUT
+            if [[ $VERSION =~ .*(a|alpha|b|beta|rc|c)[0-9]+ ]]; then
+              # Pre-release version
+              echo "new_release=true" >> $GITHUB_OUTPUT
+              echo "is_pre_release=true" >> $GITHUB_OUTPUT
+
+              echo "Is pre-release version: $VERSION"
+            else
+              # Standard release version
+              echo "new_release=true" >> $GITHUB_OUTPUT
+              echo "is_pre_release=false" >> $GITHUB_OUTPUT
+
+              echo "Is standard release version: $VERSION"
+            fi
+          fi
+
+  build-and-publish:
+    needs: is-new-release-check
+    if: |
+      needs.is-new-release-check.outputs.new_release == 'true'
+    runs-on: ubuntu-latest
+    env:
+      RELEASE_NOTES_FILE: release_notes.md
+      CHANGELOG_FILE: CHANGELOG.md
+    environment:
+      name: pypi
+      url: https://pypi.org/project/kedro_datasentinel
+    permissions:
+      id-token: write
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.10.12
+
+      - name: Upgrade pip
+        run: |
+          python -m pip install --upgrade pip
+        shell: bash
+
+      - name: Install scripts dependencies
+        run: |
+          make install-scripts
+        shell: bash
+
+      - name: Build project
+        run: |
+          make package
+        shell: bash
+
+      - name: Extract release notes
+        run: |
+          python scripts/gh_actions/extract_release_notes.py \
+          -f $CHANGELOG_FILE \
+          -o $RELEASE_NOTES_FILE -v ${{ needs.is-new-release-check.outputs.version }}
+        shell: bash
+
+      - name: Publish package
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages_dir: dist/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ needs.is-new-release-check.outputs.version }}
+          name: ${{ needs.is-new-release-check.outputs.version }}
+          body_path: ${{ env.RELEASE_NOTES_FILE }}
+          draft: false
+          prerelease: ${{ needs.is-new-release-check.outputs.is_pre_release }}

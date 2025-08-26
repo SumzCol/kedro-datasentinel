@@ -19,7 +19,7 @@ result_stores:
   delta_result_store:
     type: spark.DeltaTableResultStore
     table: result_store_table
-    schema: logs/
+    schema: example/schema/
     dataset_type: file
     include_failed_rows: True
     failed_rows_limit: 100

@@ -1,9 +1,9 @@
+from copy import deepcopy
+from datetime import datetime
 import json
 import logging
 import os
-from copy import deepcopy
-from datetime import datetime
-from typing import Dict, Any, List
+from typing import Any
 
 from datasentinel.session import DataSentinelSession
 from kedro.config import MissingConfigException
@@ -14,9 +14,14 @@ from kedro.pipeline.node import Node
 from pydantic import ValidationError
 from ulid import ULID
 
-from kedro_datasentinel.framework.hooks.kedro_audit_row import KedroAuditRow
 from kedro_datasentinel.config import DataSentinelSessionConfig, ValidationWorkflowConfig
-from kedro_datasentinel.core import DataSentinelConfigError, Mode, DataValidationConfigError, Event
+from kedro_datasentinel.core import (
+    DataSentinelConfigError,
+    DataValidationConfigError,
+    Event,
+    Mode,
+)
+from kedro_datasentinel.framework.hooks.kedro_audit_row import KedroAuditRow
 from kedro_datasentinel.utils import dataset_has_validations, exception_to_str
 
 
@@ -26,7 +31,7 @@ class DataSentinelHooks:
         self._run_id = None
         self._env = None
         self._extra_params = None
-        self._run_params: Dict[str, Any] = {}
+        self._run_params: dict[str, Any] = {}
         self._session: DataSentinelSession | None = None
 
     @property
@@ -39,19 +44,19 @@ class DataSentinelHooks:
         self._audit_enabled = self._session.audit_store_manager.count(enabled_only=True) > 0
 
     @hook_impl
-    def before_pipeline_run(self, run_params: Dict[str, Any]):
+    def before_pipeline_run(self, run_params: dict[str, Any]):
         if self._audit_enabled:
             self._run_id = str(ULID())
-            self._env = run_params.get("env") or os.getenv("KEDRO_ENV") or 'local'
+            self._env = run_params.get("env") or os.getenv("KEDRO_ENV") or "local"
             self._extra_params = (
-                json.dumps(run_params.get('extra_params'))
-                if run_params.get('extra_params')
+                json.dumps(run_params.get("extra_params"))
+                if run_params.get("extra_params")
                 else None
             )
             self._run_params = deepcopy(run_params)
 
     @hook_impl
-    def before_node_run(self, node: Node, inputs: Dict[str, Any]):
+    def before_node_run(self, node: Node, inputs: dict[str, Any]):
         if self._audit_enabled:
             self._log_event(
                 node=node.name,
@@ -61,11 +66,7 @@ class DataSentinelHooks:
 
     @hook_impl
     def after_node_run(
-        self,
-        node: Node,
-        catalog: DataCatalog,
-        inputs: Dict[str, Any],
-        outputs: Dict[str, Any]
+        self, node: Node, catalog: DataCatalog, inputs: dict[str, Any], outputs: dict[str, Any]
     ):
         if not self._audit_enabled:
             self._run_online_validations(catalog, outputs)
@@ -78,7 +79,7 @@ class DataSentinelHooks:
                 node=node.name,
                 event=Event.FAILED,
                 node_inputs=list(inputs.keys()) if inputs else None,
-                exception=e
+                exception=e,
             )
             raise e
         else:
@@ -90,13 +91,13 @@ class DataSentinelHooks:
             )
 
     @hook_impl
-    def on_node_error(self, error: Exception, node: Node, inputs: Dict[str, Any]):
+    def on_node_error(self, error: Exception, node: Node, inputs: dict[str, Any]):
         if self._audit_enabled:
             self._log_event(
                 node=node.name,
                 event=Event.FAILED,
                 node_inputs=list(inputs.keys()) if inputs else None,
-                exception=error
+                exception=error,
             )
 
     def _init_session(self, context: KedroContext) -> DataSentinelSession:
@@ -123,11 +124,7 @@ class DataSentinelHooks:
             ) from e
         return session_config_model.create_session(context=context)
 
-    def _run_online_validations(
-        self,
-        catalog: DataCatalog,
-        node_outputs: Dict[str, Any]
-    ):
+    def _run_online_validations(self, catalog: DataCatalog, node_outputs: dict[str, Any]):
         for dataset_name, data in node_outputs.items():
             dataset = catalog._get_dataset(dataset_name)
             if not dataset_has_validations(dataset):
@@ -135,7 +132,7 @@ class DataSentinelHooks:
 
             try:
                 validation_conf_model = ValidationWorkflowConfig(
-                    **dataset.metadata['kedro-datasentinel']
+                    **dataset.metadata["kedro-datasentinel"]
                 )
             except ValidationError as e:
                 raise DataValidationConfigError(
@@ -154,23 +151,19 @@ class DataSentinelHooks:
             self._session.run_validation_workflow(validation_workflow)
 
     @staticmethod
-    def _format_set_params(value: Any) -> List | None:
+    def _format_set_params(value: Any) -> list | None:
         if not value:
             return None
 
-        return (
-            list(value)
-            if not isinstance(value, list)
-            else value
-        )
+        return list(value) if not isinstance(value, list) else value
 
     def _log_event(
         self,
         node: str,
         event: Event,
-        node_inputs: List[str] | None = None,
-        node_outputs: List[str] | None = None,
-        exception: Exception | None = None
+        node_inputs: list[str] | None = None,
+        node_outputs: list[str] | None = None,
+        exception: Exception | None = None,
     ):
         """Logs an event.
 
@@ -185,27 +178,27 @@ class DataSentinelHooks:
             row=KedroAuditRow(
                 run_id=self._run_id,
                 pipeline_name=(
-                    self._run_params.get('pipeline_name')
-                    if self._run_params.get('pipeline_name')
-                    else '__default__'
+                    self._run_params.get("pipeline_name")
+                    if self._run_params.get("pipeline_name")
+                    else "__default__"
                 ),
                 node_name=node,
                 inputs=node_inputs,
                 outputs=node_outputs,
-                session_id=self._run_params.get('session_id'),
-                project_path=self._run_params.get('project_path'),
+                session_id=self._run_params.get("session_id"),
+                project_path=self._run_params.get("project_path"),
                 env=self._env,
-                kedro_version=self._run_params.get('kedro_version'),
-                tags=self._format_set_params(self._run_params.get('tags')),
-                from_nodes=self._format_set_params(self._run_params.get('from_nodes')),
-                to_nodes=self._format_set_params(self._run_params.get('to_nodes')),
-                node_names=self._format_set_params(self._run_params.get('node_names')),
-                from_inputs=self._format_set_params(self._run_params.get('from_inputs')),
-                to_outputs=self._format_set_params(self._run_params.get('to_outputs')),
-                load_versions=self._format_set_params(self._run_params.get('load_versions')),
+                kedro_version=self._run_params.get("kedro_version"),
+                tags=self._format_set_params(self._run_params.get("tags")),
+                from_nodes=self._format_set_params(self._run_params.get("from_nodes")),
+                to_nodes=self._format_set_params(self._run_params.get("to_nodes")),
+                node_names=self._format_set_params(self._run_params.get("node_names")),
+                from_inputs=self._format_set_params(self._run_params.get("from_inputs")),
+                to_outputs=self._format_set_params(self._run_params.get("to_outputs")),
+                load_versions=self._format_set_params(self._run_params.get("load_versions")),
                 extra_params=self._extra_params,
-                namespace=self._run_params.get('namespace'),
-                runner=self._run_params.get('runner'),
+                namespace=self._run_params.get("namespace"),
+                runner=self._run_params.get("runner"),
                 exception=exception_to_str(exception) if exception else None,
                 event=event.value,
                 event_time=datetime.now(),

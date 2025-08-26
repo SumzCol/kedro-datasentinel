@@ -1,6 +1,6 @@
-import logging
+from collections.abc import Callable
 from copy import deepcopy
-from typing import Dict, Optional, Any, Callable
+from typing import Any
 
 from datasentinel.notification.notifier.core import AbstractNotifier
 from datasentinel.session import DataGuardSession
@@ -14,7 +14,7 @@ from kedro_datasentinel.utils import try_load_obj_from_class_paths
 
 class NotifierConfig(BaseModel):
     type: str
-    disabled: Optional[bool] = False
+    disabled: bool | None = False
 
     class Config:
         # Allow passing extra fields
@@ -23,7 +23,7 @@ class NotifierConfig(BaseModel):
 
 class ResultStoreConfig(BaseModel):
     type: str
-    disabled: Optional[bool] = False
+    disabled: bool | None = False
 
     class Config:
         # Allow passing extra fields
@@ -32,7 +32,7 @@ class ResultStoreConfig(BaseModel):
 
 class AuditStoreConfig(BaseModel):
     type: str
-    disabled: Optional[bool] = False
+    disabled: bool | None = False
 
     class Config:
         # Allow passing extra fields
@@ -40,16 +40,16 @@ class AuditStoreConfig(BaseModel):
 
 
 class DataSentinelSessionConfig(BaseModel):
-    session_name: Optional[str] = None
-    result_stores: Optional[dict[str, ResultStoreConfig]] = Field(default_factory=dict)
-    notifiers: Optional[dict[str, NotifierConfig]] = Field(default_factory=dict)
-    audit_stores: Optional[dict[str, AuditStoreConfig]] = Field(default_factory=dict)
+    session_name: str | None = None
+    result_stores: dict[str, ResultStoreConfig] | None = Field(default_factory=dict)
+    notifiers: dict[str, NotifierConfig] | None = Field(default_factory=dict)
+    audit_stores: dict[str, AuditStoreConfig] | None = Field(default_factory=dict)
 
     class Config:
         # raise an error if an unknown key is passed to the constructor
         extra = "forbid"
 
-    @model_validator(mode='before')
+    @model_validator(mode="before")
     def set_empty_stores_and_notifiers(cls, values):
         for field in ["result_stores", "notifiers", "audit_stores"]:
             values[field] = {} if values.get(field) is None else values.get(field)
@@ -109,6 +109,7 @@ def _create_arg_objs(args: dict) -> dict:
                 args[key] = class_obj(**_obj_args)
     return args
 
+
 def _create_notifier(
     name: str,
     notifier_conf: NotifierConfig,
@@ -116,22 +117,17 @@ def _create_notifier(
 ) -> AbstractNotifier:
     class_path = notifier_conf.type
     class_obj = try_load_obj_from_class_paths(
-        class_paths=[
-            class_path,
-            f"datasentinel.notification.notifier.{class_path}"
-        ]
+        class_paths=[class_path, f"datasentinel.notification.notifier.{class_path}"]
     )
     if class_obj is None:
         raise ValueError(
             f"The notifier class path '{class_path}' is not valid, it should be a full path like"
-            "'dataguard.notification.notifier.email.EmailNotifier' or one that reflects the module "
-            "of the notifier like 'email.EmailNotifier'. For custom notifiers, a full class "
-            "path is required"
+            "'dataguard.notification.notifier.email.EmailNotifier' or one that reflects the "
+            "module of the notifier like 'email.EmailNotifier'. For custom notifiers, a "
+            "full class path is required"
         )
 
-    notifier_obj_args = notifier_conf.model_dump(
-        exclude={"type"}
-    )
+    notifier_obj_args = notifier_conf.model_dump(exclude={"type"})
     notifier_obj_args = _create_arg_objs(notifier_obj_args)
     notifier_obj_args["name"] = name
 
@@ -156,10 +152,7 @@ def _create_audit_store(
 ) -> AbstractAuditStore:
     class_path = audit_store_conf.type
     class_obj = try_load_obj_from_class_paths(
-        class_paths=[
-            class_path,
-            f"datasentinel.store.audit.{class_path}"
-        ]
+        class_paths=[class_path, f"datasentinel.store.audit.{class_path}"]
     )
     if class_obj is None:
         raise ValueError(
@@ -169,9 +162,7 @@ def _create_audit_store(
             "For custom audit stores, a full class path is required"
         )
 
-    audit_store_obj_args = audit_store_conf.model_dump(
-        exclude={"type"}
-    )
+    audit_store_obj_args = audit_store_conf.model_dump(exclude={"type"})
     audit_store_obj_args = _create_arg_objs(audit_store_obj_args)
     audit_store_obj_args["name"] = name
 
@@ -196,10 +187,7 @@ def _create_result_store(
 ) -> AbstractResultStore:
     class_path = result_store_conf.type
     class_obj = try_load_obj_from_class_paths(
-        class_paths=[
-            class_path,
-            f"datasentinel.store.result.{class_path}"
-        ]
+        class_paths=[class_path, f"datasentinel.store.result.{class_path}"]
     )
     if class_obj is None:
         raise ValueError(
@@ -209,9 +197,7 @@ def _create_result_store(
             "For custom result stores, a full class path is required"
         )
 
-    result_store_obj_args = result_store_conf.model_dump(
-        exclude={"type"}
-    )
+    result_store_obj_args = result_store_conf.model_dump(exclude={"type"})
     result_store_obj_args = _create_arg_objs(result_store_obj_args)
     result_store_obj_args["name"] = name
 
@@ -232,7 +218,7 @@ def _create_result_store(
 def make_credentials_loader(context: KedroContext) -> Callable[[str], dict[str, Any] | None]:
     credentials = None
 
-    def read_credentials(key:str) -> dict[str, Any] | None:
+    def read_credentials(key: str) -> dict[str, Any] | None:
         nonlocal credentials
         if credentials is None:
             credentials = context._get_config_credentials()

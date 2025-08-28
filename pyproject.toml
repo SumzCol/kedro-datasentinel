@@ -36,6 +36,7 @@ test = [
   "pytest-cov>=3,<7",
   "pendulum >= 2.1.2",
   "coverage[toml]",
+  "pandas>=2.0,<3.0",
 ]
 
 scripts = [
@@ -120,7 +121,7 @@ testpaths = [
 ]
 
 [tool.coverage.report]
-fail_under = 90
+fail_under = 95
 show_missing = true
 omit = [
     "tests/*",

@@ -1,4 +1,3 @@
-from importlib import resources
 import logging
 from pathlib import Path
 
@@ -13,7 +12,7 @@ from pydantic import ValidationError
 
 from kedro_datasentinel.config.data_validation import ValidationWorkflowConfig
 from kedro_datasentinel.core import DataValidationConfigError, Mode
-from kedro_datasentinel.utils import dataset_has_validations
+from kedro_datasentinel.utils import dataset_has_validations, write_template
 
 
 @click.group()
@@ -51,7 +50,6 @@ def datasentinel():
 def init(env: str, force: bool):
     filename = "datasentinel.yml"
     # Load the template from the package
-    config_template = resources.read_text("kedro_datasentinel.template", filename)
     project_path = _find_kedro_project(Path.cwd()) or Path.cwd()
     bootstrap_project(project_path)
     dst_path = project_path / settings.CONF_SOURCE / env / filename
@@ -66,8 +64,7 @@ def init(env: str, force: bool):
         )
     else:
         try:
-            with open(dst_path, "w", encoding="utf-8") as file:
-                file.write(config_template)
+            write_template(filename, dst_path)
         except FileNotFoundError:
             click.secho(
                 click.style(

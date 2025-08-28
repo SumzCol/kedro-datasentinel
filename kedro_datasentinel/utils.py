@@ -1,4 +1,6 @@
 import importlib
+from importlib import resources
+from pathlib import Path
 from typing import Any
 
 from kedro.io import AbstractDataset
@@ -55,3 +57,13 @@ def dataset_has_validations(dataset: AbstractDataset) -> bool:
 
 def exception_to_str(exception: Exception) -> str:
     return f"{type(exception).__name__}: {exception!s}"
+
+
+def load_template(template_name: str) -> str:
+    return resources.read_text("kedro_datasentinel.template", template_name)
+
+
+def write_template(template_name: str, dst_path: Path) -> None:
+    template = load_template(template_name)
+    with open(dst_path, "w", encoding="utf-8") as file:
+        file.write(template)

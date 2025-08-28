@@ -10,7 +10,7 @@ class KedroAuditRow(BaseAuditRow):
     node_name: str
     inputs: list[str] | None = None
     outputs: list[str] | None = None
-    session_id: str
+    session_id: str | None = None
     project_path: str | None = None
     env: str | None = None
     kedro_version: str | None = None

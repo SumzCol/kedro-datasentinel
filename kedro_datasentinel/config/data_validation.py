@@ -8,7 +8,7 @@ from datasentinel.validation.core import NotifyOnEvent
 from datasentinel.validation.data_asset.memory import MemoryDataAsset
 from datasentinel.validation.data_validation import DataValidation
 from datasentinel.validation.workflow import ValidationWorkflow
-from pydantic import BaseModel, Field, ValidationError, field_validator
+from pydantic import BaseModel, Field, field_validator
 
 from kedro_datasentinel.core import Mode, RuleNotImplementedError
 from kedro_datasentinel.utils import try_load_obj, try_load_obj_from_class_paths
@@ -32,12 +32,14 @@ class CheckConfig(BaseModel):
         # Allow passing extra fields
         extra = "allow"
 
-    @field_validator("type")
+    @field_validator("rules")
     def fill_empty_rules(value):
         return [] if value is None else value
 
     @field_validator("level", mode="before")
     def map_level_value(value):
+        if isinstance(value, CheckLevel) or isinstance(value, int):
+            return value
         _check_level_map = {
             "WARNING": 0,
             "ERROR": 1,
@@ -45,7 +47,7 @@ class CheckConfig(BaseModel):
         }
 
         if value not in _check_level_map:
-            raise ValidationError(
+            raise ValueError(
                 f"Invalid level '{value}' it should be one of {list(_check_level_map.keys())}"
             )
         return _check_level_map[value]
@@ -110,6 +112,14 @@ class ValidationWorkflowConfig(BaseModel):
     class Config:
         # raise an error if an unknown key is passed to the constructor
         extra = "forbid"
+
+    @field_validator("result_stores")
+    def result_stores_validator(value):
+        return [] if value is None else value
+
+    @field_validator("notifiers_by_events")
+    def notifiers_by_events_validator(value):
+        return {} if value is None else value
 
     @property
     def has_online_checks(self) -> bool:

@@ -1,6 +1,5 @@
 from copy import deepcopy
 from datetime import datetime
-import json
 import logging
 import os
 from typing import Any
@@ -48,11 +47,7 @@ class DataSentinelHooks:
         if self._audit_enabled:
             self._run_id = str(ULID())
             self._env = run_params.get("env") or os.getenv("KEDRO_ENV") or "local"
-            self._extra_params = (
-                json.dumps(run_params.get("extra_params"))
-                if run_params.get("extra_params")
-                else None
-            )
+            self._extra_params = run_params.get("extra_params")
             self._run_params = deepcopy(run_params)
 
     @hook_impl

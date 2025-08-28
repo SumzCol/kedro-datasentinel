@@ -44,12 +44,12 @@ jobs:
         uses: mukunku/tag-exists-action@v1.6.0
         id: tag-exists
         with:
-          tag: ${{ env.DATA_SENTINEL_VERSION }}
+          tag: ${{ env.RELEASE_VERSION }}
 
       - name: Check if Pypi version exists
         id: pypi-version-exists
         run: |
-          URL="https://pypi.org/pypi/kedro_datasentinel/${{ env.DATA_SENTINEL_VERSION }}/json"
+          URL="https://pypi.org/pypi/kedro_datasentinel/${{ env.RELEASE_VERSION }}/json"
           HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" $URL)
 
           if [ "$HTTP_STATUS" == "200" ]; then
@@ -62,7 +62,7 @@ jobs:
       - name: Set outputs
         id: set-outputs
         env:
-          VERSION: ${{ env.DATA_SENTINEL_VERSION }}
+          VERSION: ${{ env.RELEASE_VERSION }}
           TAG_EXISTS: ${{ steps.tag-exists.outputs.exists }}
           PYPI_VERSION_EXISTS: ${{ steps.pypi-version-exists.outputs.exists }}
         run: |

@@ -68,7 +68,7 @@ def extract_release_version(file_path: str) -> None:
     env_file = os.getenv("GITHUB_ENV")
     if env_file is not None:
         with open(env_file, "a") as file:
-            file.write(f"DATA_SENTINEL_VERSION={version}\n")
+            file.write(f"RELEASE_VERSION={version}\n")
     else:
         raise FileNotFoundError("GITHUB_ENV environment variable is not set.")
 

@@ -1,4 +1,4 @@
-# 0.0.1rc1
+# 0.0.1b1
 ## Major features and improvements
 
 ### Hooks

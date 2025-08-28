@@ -3,7 +3,7 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "kedro_datasentinel"
+name = "kedro-datasentinel"
 description = "A Kedro plugin to integrate Data Sentinel in Kedro projects."
 authors = [
     { name = "Sumz SAS" },
@@ -50,7 +50,7 @@ lint = [
 ]
 
 all = [
-  "kedro_datasentinel[test,scripts,lint]",
+  "kedro-datasentinel[test,scripts,lint]",
 ]
 
 [tool.setuptools.dynamic]

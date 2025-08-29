@@ -6,14 +6,10 @@ on:
       - main
 
 jobs:
-  all-checks:
-    uses: ./.github/workflows/all-checks.yml
-
   is-new-release-check:
-    needs: all-checks
     runs-on: ubuntu-latest
     outputs:
-      new_release: ${{ steps.set-outputs.outputs.new_release }}
+      is_new_release: ${{ steps.set-outputs.outputs.is_new_release }}
       is_pre_release: ${{ steps.set-outputs.outputs.is_pre_release }}
       version: ${{ steps.set-outputs.outputs.version }}
     steps:
@@ -68,7 +64,7 @@ jobs:
         run: |
           if [ $TAG_EXISTS == 'true' || $PYPI_VERSION_EXISTS == 'true' ]; then
             # If tag exists or pypi version exists, set both outputs to false
-            echo "new_release=false" >> $GITHUB_OUTPUT
+            echo "is_new_release=false" >> $GITHUB_OUTPUT
             echo "is_pre_release=false" >> $GITHUB_OUTPUT
             echo "Tag or Pypi version exists ($VERSION) skipping release"
           else
@@ -76,23 +72,32 @@ jobs:
             echo "version=$VERSION" >> $GITHUB_OUTPUT
             if [[ $VERSION =~ .*(a|alpha|b|beta|rc|c)[0-9]+ ]]; then
               # Pre-release version
-              echo "new_release=true" >> $GITHUB_OUTPUT
+              echo "is_new_release=true" >> $GITHUB_OUTPUT
               echo "is_pre_release=true" >> $GITHUB_OUTPUT
 
               echo "Is pre-release version: $VERSION"
             else
               # Standard release version
-              echo "new_release=true" >> $GITHUB_OUTPUT
+              echo "is_new_release=true" >> $GITHUB_OUTPUT
               echo "is_pre_release=false" >> $GITHUB_OUTPUT
 
               echo "Is standard release version: $VERSION"
             fi
           fi
 
-  build-and-publish:
+  all-checks:
     needs: is-new-release-check
     if: |
-      needs.is-new-release-check.outputs.new_release == 'true'
+      needs.is-new-release-check.outputs.is_new_release == 'true'
+    uses: ./.github/workflows/all-checks.yml
+
+  build-and-publish:
+    needs: [all-checks, is-new-release-check]
+    if: |
+      always() &&
+      !contains(needs.*.result, 'failure') &&
+      !contains(needs.*.result, 'cancelled') &&
+      needs.is-new-release-check.outputs.is_new_release == 'true'
     runs-on: ubuntu-latest
     env:
       RELEASE_NOTES_FILE: release_notes.md

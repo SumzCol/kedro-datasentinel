@@ -1,0 +1,105 @@
+# Data Sentinel configuration file
+# This file is used to configure the Data Sentinel session name and the available result stores,
+# notifiers and audit stores.
+session_name: example_session
+
+# Result stores are used to store the results of data quality validation workflows.
+# Each result store is defined by a unique name, a type which corresponds to the class name of
+# the component and the constructor arguments it requires.
+
+# - In this case, a single result store is defined with the unique name "delta_result_store" and type
+#   spark.DeltaTableResultStore. The constructor arguments are the table name, schema, dataset type,
+#   include_failed_rows and failed_rows_limit.
+# - You can define multiple result stores with different types and constructor arguments.
+# - It's possible to disable a result store by setting the disabled key to True as shown in the
+#   delta_result_store configuration.
+
+# EXAMPLE CONFIGURATION
+#result_stores:
+#  delta_result_store:
+#    type: spark.DeltaTableResultStore
+#    table: result_store_table
+#    schema: example/schema/
+#    dataset_type: file
+#    include_failed_rows: True
+#    failed_rows_limit: 100
+#    disabled: True # This result store is disabled.
+
+
+# Notifiers are used to notify the user about the results of data quality validation workflows.
+# Each notifier is defined by a unique name, a type defined by the class name and the constructor
+# arguments it requires.
+
+# - In this case, 2 notifiers are defined with the unique names "email_notifier" and "slack_notifier".
+#   The first notifier is an SMTPEmailNotifier which sends the results to an email address using SMTP
+#   and a renderer to format the results. The second notifier is a SlackNotifier which sends the
+#   results to a Slack channel using a renderer to format the results.
+# - You can define multiple notifiers with different types and constructor arguments.
+# - In order to inject credentials, you have to reference a credentials key defined in the
+#   credentials.yml file.
+#   Example: If you want to set some credentials,  e.g. slack_credentials
+#   > in `credentials.yml`:
+#     slack_credentials:
+#       SLACK_TOKEN: xxxxxxx
+#   > in this file `datasentinel.yml`:
+#   credentials: slack_credentials
+# - It's possible to disable a notifier by setting the disabled key to True as shown in the
+# slack_notifier configuration.
+
+# EXAMPLE CONFIGURATION
+#notifiers:
+#  email_notifier:
+#    type: email.SMTPEmailNotifier
+#    credentials: email_credentials
+#    server: example
+#    domain: example
+#    port: 1025
+#    mail_rcp:
+#      - test@example
+#    renderer:
+#      type: email.TemplateEmailMessageRenderer
+#      include_failed_rows: True
+#      failed_rows_file_type: excel
+#      failed_rows_limit: 5000
+#  slack_notifier:
+#    type: slack.SlackNotifier
+#    channel: test-channel
+#    credentials: slack_credentials
+#    disabled: True # This notifier is disabled.
+#    renderer:
+#      type: slack.SlackMessageRenderer
+
+
+# Audit stores are used to store kedro run audit metadata.
+# Each audit store is defined by a name, in this case "db_audit_store" and the constructor
+# arguments.
+
+# - In this case, 2 audit stores are defined with the unique names "db_audit_store" and "delta_audit_store".
+#   The first audit store is a DatabaseAuditStore which stores the audit metadata in a database table.
+#   The second audit store is a DeltaTableAuditStore which stores the audit metadata in a delta table.
+# - You can define multiple audit stores with different types and constructor arguments.
+# - In order to inject credentials, you have to reference a credentials key defined in the
+#   credentials.yml file.
+#   Example: If you want to set some credentials,  e.g. db_credentials
+#   > in `credentials.yml`:
+#   db_credentials:
+#     connection_string: postgresql://admin:password@host:port/db
+#   > in this file `datasentinel.yml`:
+#   credentials: db_credentials
+# - It's possible to disable an audit store by setting the disabled key to True as shown in the
+#   'delta_audit_store' configuration.
+
+# EXAMPLE CONFIGURATION
+#audit_stores:
+#  db_audit_store:
+#    type: database.DatabaseAuditStore
+#    table: audit_data_table
+#    schema: public
+#    credentials: db_credentials
+#    if_table_not_exists: create
+#  delta_audit_store:
+#    type: spark.DeltaTableAuditStore
+#    table: audit_data_table
+#    schema: logs/
+#    dataset_type: file
+#    disabled: True # This audit store is disabled.

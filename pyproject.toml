@@ -1,0 +1,129 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "kedro-datasentinel"
+description = "A Kedro plugin to integrate Data Sentinel in Kedro projects."
+authors = [
+    { name = "Sumz SAS" },
+]
+requires-python = ">=3.10"
+license = {text = "Apache Software License (Apache 2.0)"}
+keywords = [
+    "data quality",
+    "data engineering",
+    "kedro",
+    "kedro-plugin",
+    "data-sentinel"
+]
+classifiers = [
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13"
+]
+dynamic = ["version", "readme"]
+
+dependencies = [
+  "kedro>=0.19.0, <1.0",
+  "datasentinel>=0.1.0, <1.0"
+]
+
+[project.optional-dependencies]
+test = [
+  "pytest>=7.2,<9.0",
+  "pytest-cov>=3,<7",
+  "pendulum >= 2.1.2",
+  "coverage[toml]",
+  "pandas>=2.0,<3.0",
+]
+
+scripts = [
+    "click==8.1.0"
+]
+
+lint = [
+  "ruff==0.11.12",
+  "pre-commit>=2.9.2, <5.0",
+  "pyright==1.1.403",
+]
+
+all = [
+  "kedro-datasentinel[test,scripts,lint]",
+]
+
+[tool.setuptools.dynamic]
+version = {attr = "kedro_datasentinel.__version__"}
+readme = {file = "README.md", content-type = "text/markdown"}
+
+[project.urls]
+"Homepage" = "https://github.com/SumzCol/kedro-datasentinel"
+"Bug Tracker" = "https://github.com/SumzCol/kedro-datasentinel/issues"
+
+[project.entry-points."kedro.project_commands"]
+kedro_datasentinel = "kedro_datasentinel.framework.cli.cli:commands"
+
+[project.entry-points."kedro.hooks"]
+kedro_datasentinel = "kedro_datasentinel.framework.hooks.datasentinel_hooks:hooks"
+
+[tool.setuptools.package-data]
+"kedro_datasentinel" = ["template/*.yml"]
+
+[tool.pyright]
+include = ['kedro_datasentinel']
+exclude = [
+    "**/node_modules",
+    "**/__pycache__",
+    ".git",
+    ".ruff_cache",
+    "^docs/"
+]
+typeCheckingMode = "off"
+useLibraryCodeForTypes = true
+reportMissingImports = "none"
+reportMissingTypeStubs = false
+reportUnknownMemberType = false
+reportUnknownVariableType = false
+reportUnknownArgumentType = false
+reportPrivateUsage = false
+reportUntypedFunctionDecorator = true
+reportUntypedClassDecorator = true
+reportUntypedBaseClass = true
+reportIncompatibleMethodOverride = true
+reportIncompatibleVariableOverride = true
+reportOptionalSubscript = false
+reportOptionalMemberAccess = false
+reportOptionalCall = false
+reportOptionalIterable = false
+reportOptionalContextManager = false
+reportOptionalOperand = false
+reportNoneNameAccess = false
+pythonVersion = "3.10"
+pythonPlatform = "All"
+
+[tool.pytest.ini_options]
+addopts="""
+--cov-context test  \
+--cov-config pyproject.toml \
+--cov-report xml:coverage.xml \
+--cov-report term-missing \
+--cov kedro_datasentinel \
+--cov tests \
+--no-cov-on-fail \
+-ra \
+-W ignore"""
+markers = [
+    "unit: marker for unit tests",
+]
+testpaths = [
+  "tests"
+]
+
+[tool.coverage.report]
+fail_under = 95
+show_missing = true
+omit = [
+    "tests/*",
+]
+exclude_also = ["raise NotImplementedError", "if TYPE_CHECKING:", "__all__"]

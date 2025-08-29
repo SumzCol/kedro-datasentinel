@@ -1,0 +1,32 @@
+name: All Checks Workflow
+
+on:
+  workflow_call:
+  push:
+    branches:
+      - develop
+    paths-ignore:
+      - 'docs/**'
+      - '**/*.md'
+  pull_request:
+    branches:
+      - main
+      - develop
+    paths-ignore:
+      - 'docs/**'
+      - '**/*.md'
+jobs:
+  unit-tests:
+    strategy:
+      matrix:
+        os: [ ubuntu-latest ]
+        python-version: ["3.10"]#, "3.11", "3.12", "3.13" ]
+    uses: ./.github/workflows/rw-unit-tests.yml
+    with:
+      os: ${{ matrix.os }}
+      python-version: ${{ matrix.python-version }}
+  lint:
+    uses: ./.github/workflows/rw-lint.yml
+    with:
+      os: ubuntu-latest
+      python-version: 3.10.12

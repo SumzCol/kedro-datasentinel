@@ -1,0 +1,37 @@
+line-length = 98
+show-fixes = true
+target-version = "py310"
+lint.select = [
+    "F",    # Pyflakes
+    "W",    # pycodestyle
+    "E",    # pycodestyle
+    "I",    # isort
+    "UP",   # pyupgrade
+    "PL",   # Pylint
+    "T201", # Print Statement
+    "S",    # flake8-bandit
+    "TCH",  # flake8-type-checking
+    "RUF",  # Ruff-specific rules
+]
+
+[lint.per-file-ignores]
+"tests/*" = ["UP007", "S101", "D", "PLR0913", "PLR2004", "PLR0915"]
+
+[lint.pylint]
+max-args = 7  # Set the maximum number of arguments for a function
+
+[lint.isort]
+force-sort-within-sections = true
+force-wrap-aliases = true
+combine-as-imports = true
+lines-after-imports = 2
+known-first-party = ["kedro_datasentinel"]
+known-third-party = ["pyspark", "pandas", "datasentinel"]
+section-order = ["future", "standard-library", "third-party", "first-party", "local-folder"]
+
+[lint.pydocstyle]
+convention = "google"
+
+[format]
+quote-style = "double"
+docstring-code-format = true

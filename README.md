@@ -1,5 +1,10 @@
 # Kedro-DataSentinel
 
+[![Python version](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-blue.svg)](https://pypi.org/project/kedro-datasentinel/)
+[![PyPI version](https://badge.fury.io/py/kedro-datasentinel.svg)](https://pypi.org/project/kedro-datasentinel/)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](https://github.com/SumzCol/kedro-datasentinel/blob/main/LICENSE)
+[![Powered by Kedro](https://img.shields.io/badge/powered_by-kedro-ffc900?logo=kedro)](https://kedro.org)
+
 `kedro-datasentinel` is a [kedro-plugin](https://kedro.readthedocs.io/en/stable/extend_kedro/plugins.html) for seamless integration of Data Sentinel capabilities inside [kedro](https://kedro.readthedocs.io/en/stable/index.html) projects. It enforces Kedro principles to make data quality and validation as production-ready as possible. Its core functionalities are:
 
 - **Data Validation**: `kedro-datasentinel` enhances data quality for machine learning and data engineering pipelines. With minimal configuration, you can validate your datasets during a kedro run, both online (during pipeline execution) and offline (post-execution).

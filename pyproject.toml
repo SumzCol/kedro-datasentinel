@@ -68,7 +68,7 @@ kedro_dataguard = "kedro_datasentinel.framework.cli.cli:commands"
 kedro_dataguard = "kedro_datasentinel.framework.hooks.datasentinel_hooks:hooks"
 
 [tool.setuptools.package-data]
-"kedro_datasentinel.email.template" = ["template/*.yml"]
+"kedro_datasentinel" = ["template/*.yml"]
 
 [tool.pyright]
 include = ['kedro_datasentinel']

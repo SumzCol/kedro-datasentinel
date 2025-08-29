@@ -23,6 +23,7 @@ def commands():
     name="datasentinel",
     cls=LazyGroup,
     lazy_subcommands={
+        "init": "kedro_datasentinel.framework.cli.cli.init",
         "validate": "kedro_datasentinel.framework.cli.cli.validate",
     },
 )

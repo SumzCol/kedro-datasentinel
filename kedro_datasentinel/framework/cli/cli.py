@@ -48,6 +48,7 @@ def datasentinel():
     help="Update the template without any checks.",
 )
 def init(env: str, force: bool):
+    """Initialize a 'datasentinel.yml' configuration file in the specified environment."""
     filename = "datasentinel.yml"
     # Load the template from the package
     project_path = _find_kedro_project(Path.cwd()) or Path.cwd()
@@ -96,7 +97,7 @@ def init(env: str, force: bool):
     help="The name of the environment",
 )
 def validate(dataset: str, env: str):
-    """Validate a Kedro dataset using DataSentinel."""
+    """Validate a Kedro dataset using Data Sentinel."""
     project_path = _find_kedro_project(Path.cwd()) or Path.cwd()
     with KedroSession.create(
         project_path=project_path,

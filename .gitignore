@@ -163,7 +163,7 @@ cython_debug/
 /.idea/codeStyles/codeStyleConfig.xml
 /.idea/inspectionProfiles/profiles_settings.xml
 /.idea/.gitignore
-/.idea/dataguard.iml
+/.idea/kedro-datasentinel.iml
 /.idea/misc.xml
 /.idea/modules.xml
 /.idea/vcs.xml

@@ -62,10 +62,10 @@ readme = {file = "README.md", content-type = "text/markdown"}
 "Bug Tracker" = "https://github.com/SumzCol/kedro-datasentinel/issues"
 
 [project.entry-points."kedro.project_commands"]
-kedro_dataguard = "kedro_datasentinel.framework.cli.cli:commands"
+kedro_datasentinel = "kedro_datasentinel.framework.cli.cli:commands"
 
 [project.entry-points."kedro.hooks"]
-kedro_dataguard = "kedro_datasentinel.framework.hooks.datasentinel_hooks:hooks"
+kedro_datasentinel = "kedro_datasentinel.framework.hooks.datasentinel_hooks:hooks"
 
 [tool.setuptools.package-data]
 "kedro_datasentinel" = ["template/*.yml"]

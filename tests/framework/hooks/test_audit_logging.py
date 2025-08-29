@@ -19,12 +19,11 @@ from kedro_datasentinel.framework.hooks.datasentinel_hooks import DataSentinelHo
 def create_pipeline():
     def _create(add_exception: bool = False):
         def extract_data():
-            return DataFrame(data={"col1": [1, 2, 3], "col2": [4, 5, 6]})
+            return DataFrame(data={"col1": [1, 2, 3]})
 
         def transform_data(data: DataFrame):
             if add_exception:
                 raise ValueError("Test exception")
-            data["col3"] = data["col1"] + data["col2"]
             return data
 
         return Pipeline(
@@ -45,29 +44,6 @@ def create_pipeline():
         )
 
     return _create
-
-
-# @pytest.fixture
-# def create_validation_metadata():
-#     def _create(level: str = "ERROR", col: str = "col1", value: int = 2, mode: str = "ONLINE"):
-#         return {
-#             "kedro-datasentinel": {
-#                 "name": "test_validation",
-#                 "data_asset": "cleaned_data",
-#                 "data_asset_schema": "intermediate",
-#                 "check_list": {
-#                     "type": "CualleeCheck",
-#                     "mode": mode,
-#                     "level": level,
-#                     "rules": [
-#                         {
-#                             "name": "is_less_than", "column": col, "value": value
-#                         }
-#                     ]
-#                 }
-#             }
-#         }
-#     return _create
 
 
 @pytest.fixture

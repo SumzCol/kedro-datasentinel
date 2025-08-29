@@ -74,14 +74,7 @@ class TestSessionCreationUnit:
             ) as mock_config:
                 mock_config.side_effect = ValidationError.from_exception_data(
                     "DataSentinelSessionConfig",
-                    [
-                        {
-                            "type": "missing",
-                            "loc": ("session_name",),
-                            "msg": "Dummy message",
-                            "input": {},
-                        }
-                    ],
+                    [],
                 )
 
                 # Test that DataSentinelConfigError is raised with proper message

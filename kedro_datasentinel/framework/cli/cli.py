@@ -1,4 +1,3 @@
-import logging
 from pathlib import Path
 
 import click
@@ -17,7 +16,7 @@ from kedro_datasentinel.utils import dataset_has_validations, write_template
 
 @click.group()
 def commands():
-    pass
+    pass  # pragma: no cover
 
 
 @commands.group(
@@ -29,7 +28,7 @@ def commands():
 )
 def datasentinel():
     """Kedro plugin to interact with DataSentinel."""
-    pass
+    pass  # pragma: no cover
 
 
 @click.command(name="init")  # type: ignore
@@ -65,6 +64,12 @@ def init(env: str, force: bool):
     else:
         try:
             write_template(filename, dst_path)
+            click.secho(
+                click.style(
+                    f"'{settings.CONF_SOURCE}/{env}/{filename}' successfully updated.",
+                    fg="green",
+                )
+            )
         except FileNotFoundError:
             click.secho(
                 click.style(
@@ -91,7 +96,7 @@ def init(env: str, force: bool):
 )
 def validate(dataset: str, env: str):
     """Validate a Kedro dataset using DataSentinel."""
-    project_path = Path.cwd()
+    project_path = _find_kedro_project(Path.cwd()) or Path.cwd()
     with KedroSession.create(
         project_path=project_path,
         env=env,
@@ -101,8 +106,11 @@ def validate(dataset: str, env: str):
         dataset_instance = catalog._get_dataset(dataset_name=dataset)
 
         if not dataset_has_validations(dataset_instance):
-            logging.getLogger(__name__).info(
-                f"Dataset '{dataset}' doesnt have validations configured."
+            click.secho(
+                click.style(
+                    f"Dataset '{dataset}' doesn't have validations configured.",
+                    fg="yellow",
+                )
             )
             return
 
@@ -117,8 +125,11 @@ def validate(dataset: str, env: str):
             ) from e
 
         if not validation_conf_model.has_offline_checks:
-            logging.getLogger(__name__).info(
-                f"Dataset '{dataset}' does not have checks with 'OFFLINE' or 'BOTH' mode."
+            click.secho(
+                click.style(
+                    f"Dataset '{dataset}' does not have checks with 'OFFLINE' or 'BOTH' mode.",
+                    fg="yellow",
+                )
             )
             return
 

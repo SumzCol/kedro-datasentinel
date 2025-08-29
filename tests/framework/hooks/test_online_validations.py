@@ -1,185 +1,179 @@
 from unittest.mock import MagicMock, patch
 
+from datasentinel.session import DataSentinelSession
+from kedro.framework.hooks import _create_hook_manager
+from kedro.framework.hooks.manager import _register_hooks
+from kedro.framework.session import KedroSession
+from kedro.framework.startup import bootstrap_project
 from kedro.io import DataCatalog, MemoryDataset
-from kedro.pipeline.node import Node
+from kedro.pipeline import Pipeline
+from kedro.pipeline.node import node
+from kedro.runner import ThreadRunner
+from pandas import DataFrame
 from pydantic import ValidationError
 import pytest
 
-from kedro_datasentinel.core import DataValidationConfigError, Mode
+from kedro_datasentinel.core import DataValidationConfigError
 from kedro_datasentinel.framework.hooks.datasentinel_hooks import DataSentinelHooks
 
 
 @pytest.fixture
-def mock_catalog_with_validations():
-    """Create a mock catalog with datasets that have validation metadata."""
-    dataset = MemoryDataset()
-    dataset.metadata = {
-        "kedro-datasentinel": {
-            "name": "test_validation",
-            "check_list": {
-                "test_check": {
-                    "type": "CualleeCheck",
-                    "mode": "ONLINE",
-                    "level": "ERROR",
-                    "rules": [],
+def dummy_pipeline():
+    def extract_data():
+        return DataFrame(data={"col1": [1, 2, 3], "col2": [4, 5, 6]})
+
+    return Pipeline(
+        nodes=[
+            node(
+                func=extract_data,
+                inputs=None,
+                outputs="raw_data",
+                name="extract_data",
+            ),
+        ]
+    )
+
+
+@pytest.fixture
+def catalog_with_validations():
+    return DataCatalog(
+        {
+            "raw_data": MemoryDataset(
+                metadata={
+                    "kedro-datasentinel": {
+                        "name": "test_validation",
+                        "data_asset": "raw_data",
+                        "data_asset_schema": "raw",
+                        "check_list": {
+                            "type": "CualleeCheck",
+                            "mode": "ONLINE",
+                            "level": "ERROR",
+                            "rules": [{"name": "is_less_than", "column": "col1", "value": 2}],
+                        },
+                    }
                 }
-            },
+            ),
         }
-    }
-    catalog = MagicMock(spec=DataCatalog)
-    catalog._get_dataset.return_value = dataset
-    return catalog
-
-
-@pytest.fixture
-def mock_catalog_without_validations():
-    """Create a mock catalog with datasets that have no validation metadata."""
-    dataset = MemoryDataset()
-    catalog = MagicMock(spec=DataCatalog)
-    catalog._get_dataset.return_value = dataset
-    return catalog
-
-
-@pytest.fixture
-def mock_node_outputs():
-    """Create mock node outputs."""
-    return {"test_dataset": {"col1": [1, 2, 3], "col2": [4, 5, 6]}}
-
-
-@pytest.fixture
-def mock_node():
-    """Create a mock node."""
-    return MagicMock(spec=Node, name="test_node")
+    )
 
 
 @pytest.mark.unit
 class TestOnlineValidationsUnit:
-    def test_no_validations_configured(
-        self, mock_catalog_without_validations, mock_node_outputs, mock_node
+    def test_dataset_with_badly_configured_validations(
+        self,
+        kedro_project_with_datasentinel_conf,
+        dummy_pipeline,
+        catalog_with_validations,
     ):
-        """Test that no validation workflow is executed when datasets have no validations."""
-        mock_session = MagicMock()
-        hook = DataSentinelHooks()
-        hook._session = mock_session
-        hook._audit_enabled = False  # Disable audit logging to focus on validation logic
+        """Test that a exception is raised when dataset has badly configured validations"""
+        mock_session = MagicMock(spec=DataSentinelSession)
+        mock_audit_store_manager = MagicMock()
 
-        with patch(
-            "kedro_datasentinel.framework.hooks.datasentinel_hooks.dataset_has_validations",
-            return_value=False,
-        ):
-            # Call the public hook method instead of the private method
-            hook.after_node_run(
-                node=mock_node,
-                catalog=mock_catalog_without_validations,
-                inputs={},
-                outputs=mock_node_outputs,
-            )
+        # Disable audit logging
+        mock_audit_store_manager.count.return_value = 0
+        mock_session.audit_store_manager = mock_audit_store_manager
 
-        # Verify that no validation workflow was executed
-        mock_session.run_validation_workflow.assert_not_called()
+        bootstrap_project(kedro_project_with_datasentinel_conf)
+        with KedroSession.create(
+            project_path=kedro_project_with_datasentinel_conf,
+        ) as session:
+            context = session.load_context()
 
-    def test_invalid_validation_config_raises_error(
-        self, mock_catalog_with_validations, mock_node_outputs, mock_node
-    ):
-        """Test that DataValidationConfigError is raised when validation config is invalid."""
-        mock_session = MagicMock()
-        hook = DataSentinelHooks()
-        hook._session = mock_session
-        hook._audit_enabled = False  # Disable audit logging to focus on validation logic
+            with (
+                patch(
+                    "kedro_datasentinel.framework.hooks.datasentinel_hooks."
+                    "DataSentinelHooks._init_session",
+                    return_value=mock_session,
+                ),
+                patch(
+                    "kedro_datasentinel.framework.hooks.datasentinel_hooks."
+                    "ValidationWorkflowConfig",
+                    side_effect=ValidationError.from_exception_data(
+                        "DataValidationConfigError",
+                        [],
+                    ),
+                ),
+            ):
+                runner = ThreadRunner()
+                datasentinel_hook = DataSentinelHooks()
+                datasentinel_hook.after_context_created(context)
 
-        with (
-            patch(
-                "kedro_datasentinel.framework.hooks.datasentinel_hooks.dataset_has_validations",
-                return_value=True,
-            ),
-            patch(
-                "kedro_datasentinel.framework.hooks.datasentinel_hooks.ValidationWorkflowConfig",
-                side_effect=ValidationError.from_exception_data("ValidationWorkflowConfig", []),
-            ),
-        ):
-            with pytest.raises(DataValidationConfigError, match="could not be parsed"):
-                # Call the public hook method instead of the private method
-                hook.after_node_run(
-                    node=mock_node,
-                    catalog=mock_catalog_with_validations,
-                    inputs={},
-                    outputs=mock_node_outputs,
+                datasentinel_hook.before_pipeline_run(
+                    run_params={},
                 )
 
-        # Verify that no validation workflow was executed
-        mock_session.run_validation_workflow.assert_not_called()
+                hook_manager = _create_hook_manager()
+                _register_hooks(hook_manager, (datasentinel_hook,))
 
-    def test_offline_only_checks_skipped(
-        self, mock_catalog_with_validations, mock_node_outputs, mock_node
+                with pytest.raises(DataValidationConfigError):
+                    runner.run(
+                        pipeline=dummy_pipeline,
+                        catalog=catalog_with_validations,
+                        hook_manager=hook_manager,
+                    )
+
+    @pytest.mark.parametrize(
+        "has_online_checks",
+        [True, False],
+        ids=["with_online_checks", "without_online_checks"],
+    )
+    def test_dataset_with_and_without_online_checks(
+        self,
+        kedro_project_with_datasentinel_conf,
+        dummy_pipeline,
+        catalog_with_validations,
+        has_online_checks,
     ):
-        """Test that validation workflow is not executed for datasets with only offline checks."""
-        mock_session = MagicMock()
-        hook = DataSentinelHooks()
-        hook._session = mock_session
-        hook._audit_enabled = False  # Disable audit logging to focus on validation logic
+        """Test that validation workflow is executed when dataset has online checks and not
+        executed when dataset has no online checks"""
+        mock_session = MagicMock(spec=DataSentinelSession)
+        mock_audit_store_manager = MagicMock()
+
+        # Disable audit logging
+        mock_audit_store_manager.count.return_value = 0
+        mock_session.audit_store_manager = mock_audit_store_manager
 
         mock_validation_config = MagicMock()
-        mock_validation_config.has_online_checks = False
-
-        with (
-            patch(
-                "kedro_datasentinel.framework.hooks.datasentinel_hooks.dataset_has_validations",
-                return_value=True,
-            ),
-            patch(
-                "kedro_datasentinel.framework.hooks.datasentinel_hooks.ValidationWorkflowConfig",
-                return_value=mock_validation_config,
-            ),
-        ):
-            # Call the public hook method instead of the private method
-            hook.after_node_run(
-                node=mock_node,
-                catalog=mock_catalog_with_validations,
-                inputs={},
-                outputs=mock_node_outputs,
-            )
-
-        # Verify that no validation workflow was executed
-        mock_session.run_validation_workflow.assert_not_called()
-
-    def test_online_checks_executed(
-        self, mock_catalog_with_validations, mock_node_outputs, mock_node
-    ):
-        """Test that validation workflow is executed for datasets with online checks."""
-        mock_session = MagicMock()
-        hook = DataSentinelHooks()
-        hook._session = mock_session
-        hook._audit_enabled = False  # Disable audit logging to focus on validation logic
-
-        mock_validation_config = MagicMock()
-        mock_validation_config.has_online_checks = True
+        mock_validation_config.has_online_checks = has_online_checks
         mock_validation_workflow = MagicMock()
         mock_validation_config.create_validation_workflow.return_value = mock_validation_workflow
 
-        with (
-            patch(
-                "kedro_datasentinel.framework.hooks.datasentinel_hooks.dataset_has_validations",
-                return_value=True,
-            ),
-            patch(
-                "kedro_datasentinel.framework.hooks.datasentinel_hooks.ValidationWorkflowConfig",
-                return_value=mock_validation_config,
-            ),
-        ):
-            # Call the public hook method instead of the private method
-            hook.after_node_run(
-                node=mock_node,
-                catalog=mock_catalog_with_validations,
-                inputs={},
-                outputs=mock_node_outputs,
-            )
+        bootstrap_project(kedro_project_with_datasentinel_conf)
+        with KedroSession.create(
+            project_path=kedro_project_with_datasentinel_conf,
+        ) as session:
+            context = session.load_context()
 
-        # Verify that validation workflow was created with correct parameters
-        mock_validation_config.create_validation_workflow.assert_called_once_with(
-            dataset_name="test_dataset",
-            data=mock_node_outputs["test_dataset"],
-            mode=Mode.ONLINE,
-        )
+            with (
+                patch(
+                    "kedro_datasentinel.framework.hooks.datasentinel_hooks."
+                    "DataSentinelHooks._init_session",
+                    return_value=mock_session,
+                ),
+                patch(
+                    "kedro_datasentinel.framework.hooks.datasentinel_hooks."
+                    "ValidationWorkflowConfig",
+                    return_value=mock_validation_config,
+                ),
+            ):
+                runner = ThreadRunner()
+                datasentinel_hook = DataSentinelHooks()
+                datasentinel_hook.after_context_created(context)
 
-        # Verify that validation workflow was executed
-        mock_session.run_validation_workflow.assert_called_once_with(mock_validation_workflow)
+                datasentinel_hook.before_pipeline_run(
+                    run_params={},
+                )
+
+                hook_manager = _create_hook_manager()
+                _register_hooks(hook_manager, (datasentinel_hook,))
+
+                runner.run(
+                    pipeline=dummy_pipeline,
+                    catalog=catalog_with_validations,
+                    hook_manager=hook_manager,
+                )
+
+        if has_online_checks:
+            mock_session.run_validation_workflow.assert_called_once_with(mock_validation_workflow)
+        else:
+            mock_session.run_validation_workflow.assert_not_called()

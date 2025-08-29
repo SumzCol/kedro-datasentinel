@@ -45,7 +45,7 @@ jobs:
       - name: Check if Pypi version exists
         id: pypi-version-exists
         run: |
-          URL="https://pypi.org/pypi/kedro_datasentinel/${{ env.RELEASE_VERSION }}/json"
+          URL="https://pypi.org/pypi/kedro-datasentinel/${{ env.RELEASE_VERSION }}/json"
           HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" $URL)
 
           if [ "$HTTP_STATUS" == "200" ]; then
@@ -104,7 +104,7 @@ jobs:
       CHANGELOG_FILE: CHANGELOG.md
     environment:
       name: pypi
-      url: https://pypi.org/project/kedro_datasentinel
+      url: https://pypi.org/project/kedro-datasentinel
     permissions:
       id-token: write
       contents: write

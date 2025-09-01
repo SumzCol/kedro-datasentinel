@@ -1,3 +1,9 @@
+# 0.0.1b2
+
+## Bug fixes and other changes
+### Optional dependencies
+- Removed `all` optional dependencies from the package configuration as it was not being used.
+
 # 0.0.1b1
 ## Major features and improvements
 

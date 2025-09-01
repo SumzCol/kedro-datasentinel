@@ -49,10 +49,6 @@ lint = [
   "pyright==1.1.403",
 ]
 
-all = [
-  "kedro-datasentinel[test,scripts,lint]",
-]
-
 [tool.setuptools.dynamic]
 version = {attr = "kedro_datasentinel.__version__"}
 readme = {file = "README.md", content-type = "text/markdown"}
